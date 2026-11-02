@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>M-SHIELD Architecture</title>
+<style>
+  :root{
+    --bg:#0a0d14;--bg2:#0e131d;--panel:#121926;--panel2:#161f2e;--line:#223049;--line2:#2d3f5c;
+    --txt:#e8edf6;--muted:#8a99b4;--faint:#5e6f8c;--accent:#5b8cff;--accent2:#7c5cff;--glow:rgba(91,140,255,.3);
+    --crit:#ff4d6a;--high:#ff8a3d;--med:#ffcf3d;--low:#39d98a;--purple:#b98cff;--radius:14px;--shadow:0 10px 30px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:
+    radial-gradient(1200px 600px at 85% -10%,rgba(124,92,255,.10),transparent 60%),
+    radial-gradient(900px 500px at -10% 10%,rgba(91,140,255,.10),transparent 55%),var(--bg);
+    color:var(--txt);font-family:"Inter","Segoe UI",system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:40px 28px 80px}
+  header{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+  .logo{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;box-shadow:0 6px 18px var(--glow)}
+  .logo svg{width:26px;height:26px}
+  h1{margin:0;font-size:26px;letter-spacing:.3px}
+  .sub{color:var(--muted);margin:2px 0 0}
+  h2{font-size:15px;text-transform:uppercase;letter-spacing:2px;color:var(--accent);margin:46px 0 16px;font-weight:700}
+  h2 .n{color:var(--faint);margin-right:8px}
+  p.lead{color:var(--muted);max-width:760px}
+  .card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow)}
+
+  /* tiers */
+  .tier{display:flex;align-items:center;gap:16px;border:1px solid var(--line2);border-radius:12px;padding:16px 18px;margin-bottom:12px;background:var(--panel)}
+  .tier .tag{font-size:11px;font-weight:700;letter-spacing:1px;color:var(--faint);width:120px;flex:none}
+  .tier .body b{color:#fff} .tier .body{color:var(--muted);font-size:13px}
+  .tier.t3{border-left:3px solid var(--accent)} .tier.t2{border-left:3px solid var(--accent2)} .tier.t1{border-left:3px solid var(--low)}
+  .arrow{text-align:center;color:var(--faint);font-size:18px;margin:-4px 0 8px}
+
+  /* ER diagram */
+  .diagram{position:relative;width:920px;height:470px;margin:8px auto 0}
+  .scrollx{overflow-x:auto;padding-bottom:8px}
+  .ent{position:absolute;width:170px;background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line2);border-radius:10px;padding:0;box-shadow:var(--shadow);z-index:2}
+  .ent .t{font-weight:700;font-size:13px;padding:8px 12px;border-bottom:1px solid var(--line);border-radius:10px 10px 0 0;background:rgba(91,140,255,.12);color:#cfe0ff}
+  .ent .c{padding:8px 12px;font-size:11.5px;color:var(--muted);line-height:1.7}
+  .ent .c .pk{color:var(--med);font-weight:700} .ent .c .fk{color:var(--accent);font-style:italic} .ent .c .uk{color:var(--low)}
+  .ent.bridge .t{background:rgba(185,140,255,.15);color:#dcc8ff;border-color:var(--purple)} .ent.bridge{border-color:var(--purple)}
+  .ent.audit .t{background:rgba(57,217,138,.13);color:#aef3cf} .ent.audit{border-color:var(--low)}
+  .ent.small{width:150px}
+  svg.lines{position:absolute;inset:0;width:920px;height:470px;z-index:1;overflow:visible}
+  .lbl{position:absolute;z-index:3;font-size:10.5px;font-weight:700;color:var(--txt);background:var(--bg);border:1px solid var(--line2);padding:1px 7px;border-radius:999px;white-space:nowrap;transform:translate(-50%,-50%)}
+  .lbl.mn{color:var(--purple);border-color:var(--purple)}
+
+  /* generic grids */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+  .mini{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .mini h4{margin:0 0 6px;font-size:13px} .mini p{margin:0;color:var(--muted);font-size:12.5px}
+  .mini .k{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px}
+  th{text-align:left;padding:10px 14px;color:var(--faint);font-size:11px;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--line);background:var(--bg2)}
+  td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top} tr:last-child td{border-bottom:0}
+  code{background:var(--bg);border:1px solid var(--line);padding:1px 6px;border-radius:5px;font-size:12px;color:#cfe0ff}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700}
+  .p-casc{background:rgba(255,77,106,.14);color:var(--crit)} .p-null{background:rgba(77,163,255,.14);color:#4da3ff}
+
+  /* triggers flow */
+  .flow{display:flex;flex-direction:column;gap:10px}
+  .step{display:flex;gap:14px;align-items:flex-start}
+  .step .dot{width:30px;height:30px;border-radius:9px;flex:none;display:grid;place-items:center;font-weight:700;font-size:12px;background:rgba(91,140,255,.15);color:var(--accent);border:1px solid var(--line2)}
+  .step .d b{color:#fff} .step .d{color:var(--muted);font-size:13px}
+  /* normalization */
+  .nf{display:flex;gap:14px;flex-wrap:wrap}
+  .nf .n{flex:1;min-width:210px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .nf .n .b{font-size:20px;font-weight:800;color:var(--accent)}
+  .foot{margin-top:40px;color:var(--faint);font-size:12px;text-align:center;border-top:1px solid var(--line);padding-top:20px}
+  @media(max-width:620px){.wrap{padding:28px 16px 60px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+    <div><h1>M-SHIELD · Database Architecture</h1><p class="sub">Mobile Security Incident &amp; Vulnerability Management — MySQL 8 schema <code>mshield</code></p></div>
+  </header>
+  <p class="lead">A three-tier system whose integrity rules — keys, constraints, and audit logging — all live in the database layer, not the application. Below: the system tiers, the entity-relationship model, and how keys, constraints, views and triggers fit together.</p>
+
+  <!-- TIERS -->
+  <h2><span class="n">1</span>System tiers</h2>
+  <div class="tier t3"><div class="tag">TIER 3 · UI</div><div class="body"><b>Browser dashboard</b> — dark console, charts, CRUD forms. Talks to the server over HTTP/JSON (<code>fetch</code>).</div></div>
+  <div class="arrow">▼ &nbsp;HTTP / JSON</div>
+  <div class="tier t2"><div class="tag">TIER 2 · APP</div><div class="body"><b>Node server</b> (<code>server.js</code>) — routes requests, validates input, builds safe SQL, calls the mysql client. Thin: holds no business rules.</div></div>
+  <div class="arrow">▼ &nbsp;SQL</div>
+  <div class="tier t1"><div class="tag">TIER 1 · DATA</div><div class="body"><b>MySQL 8 · schema <code>mshield</code></b> — tables, keys, constraints, views, triggers. <b>This is the DBMS project.</b></div></div>
+
+  <!-- ER DIAGRAM -->
+  <h2><span class="n">2</span>Entity-relationship model</h2>
+  <p class="lead">Eight tables. A 1:N "spine" runs device → application → vulnerability → incident → history; one M:N (application ↔ permission) is resolved by a bridge table; analyst joins incidents optionally.</p>
+  <div class="card scrollx">
+    <div class="diagram">
+      <svg class="lines" viewBox="0 0 920 470">
+        <defs><marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#5b8cff"/></marker>
+        <marker id="am" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#b98cff"/></marker></defs>
+        <g stroke="#5b8cff" stroke-width="2" fill="none" marker-end="url(#a)">
+          <path d="M105,96 L105,186"/>            <!-- device -> application -->
+          <path d="M190,228 L326,228"/>           <!-- application -> vulnerability -->
+          <path d="M500,228 L596,228"/>           <!-- vulnerability -> incident -->
+          <path d="M685,96 L685,186"/>            <!-- analyst -> incident -->
+          <path d="M685,266 L685,366"/>           <!-- incident -> incident_history -->
+        </g>
+        <g stroke="#b98cff" stroke-width="2" fill="none" marker-end="url(#am)">
+          <path d="M105,266 L105,340 L321,340 L321,376"/>  <!-- application -> app_permission -->
+          <path d="M190,408 L246,408"/>                    <!-- permission -> app_permission -->
+        </g>
+      </svg>
+      <!-- entities -->
+      <div class="ent" style="left:20px;top:20px"><div class="t">device</div><div class="c"><span class="pk">device_id</span> · name<br>os_type · os_version<br>owner · status</div></div>
+      <div class="ent" style="left:20px;top:190px"><div class="t">application</div><div class="c"><span class="pk">app_id</span> · <span class="fk">device_id</span><br>app_name · version<br>publisher · install_date</div></div>
+      <div class="ent" style="left:20px;top:370px"><div class="t">permission</div><div class="c"><span class="pk">permission_id</span><br><span class="uk">name (UQ)</span> · risk_level</div></div>
+      <div class="ent bridge small" style="left:246px;top:380px"><div class="t">app_permission</div><div class="c"><span class="pk fk">app_id</span> + <span class="pk fk">permission_id</span><br><span style="color:var(--purple)">composite PK · bridge</span></div></div>
+      <div class="ent" style="left:326px;top:190px"><div class="t">vulnerability</div><div class="c"><span class="pk">vuln_id</span> · <span class="fk">app_id</span><br>title · severity<br>cve_ref · discovered</div></div>
+      <div class="ent" style="left:600px;top:190px"><div class="t">incident</div><div class="c"><span class="pk">incident_id</span> · <span class="fk">vuln_id</span><br><span class="fk">assigned_analyst_id?</span><br>status · priority · created_at</div></div>
+      <div class="ent" style="left:600px;top:20px"><div class="t">analyst</div><div class="c"><span class="pk">analyst_id</span> · name<br><span class="uk">email (UQ)</span> · role</div></div>
+      <div class="ent audit" style="left:600px;top:370px"><div class="t">incident_history</div><div class="c"><span class="pk">history_id</span> · <span class="fk">incident_id</span><br>action · old/new_status<br><span style="color:var(--low)">trigger-written</span></div></div>
+      <!-- labels -->
+      <div class="lbl" style="left:105px;top:141px">1 : N</div>
+      <div class="lbl" style="left:258px;top:213px">1 : N</div>
+      <div class="lbl" style="left:548px;top:213px">1 : N</div>
+      <div class="lbl" style="left:685px;top:141px">1 : N · opt</div>
+      <div class="lbl" style="left:685px;top:316px">1 : N</div>
+      <div class="lbl mn" style="left:160px;top:340px">M : N</div>
+      <div class="lbl mn" style="left:218px;top:408px">M : N</div>
+    </div>
+  </div>
+  <div class="grid" style="margin-top:14px">
+    <div class="mini"><div class="k">Legend</div><p><span class="pk" style="color:var(--med);font-weight:700">yellow</span> = primary key · <span class="fk" style="color:var(--accent);font-style:italic">blue italic</span> = foreign key · <span class="uk" style="color:var(--low)">green</span> = unique · <span style="color:var(--accent)">blue line</span> = 1:N · <span style="color:var(--purple)">purple line</span> = M:N</p></div>
+  </div>
+
+  <!-- LAYERS -->
+  <h2><span class="n">3</span>Four logical layers</h2>
+  <div class="grid">
+    <div class="mini"><div class="k">A · Entity tables</div><h4>The "nouns"</h4><p>device, application, permission, vulnerability, analyst, incident — each a real-world thing with a surrogate <code>AUTO_INCREMENT</code> PK.</p></div>
+    <div class="mini"><div class="k">B · Bridge table</div><h4>app_permission</h4><p>Resolves the application ↔ permission many-to-many. Composite PK (app_id, permission_id) — no attributes of its own.</p></div>
+    <div class="mini"><div class="k">C · Audit table</div><h4>incident_history</h4><p>Append-only log. Never written by hand — triggers insert a row on every incident create and status change.</p></div>
+    <div class="mini"><div class="k">D · Derived / logic</div><h4>4 views + 3 triggers</h4><p>No new storage. Views package the joins; triggers automate the audit trail and resolved_at stamping.</p></div>
+  </div>
+
+  <!-- KEYS -->
+  <h2><span class="n">4</span>Keys &amp; referential actions</h2>
+  <div class="card" style="padding:4px 4px">
+    <table>
+      <tr><th>Parent → Child</th><th>Cardinality</th><th>On delete</th><th>Why</th></tr>
+      <tr><td>device → application</td><td>1 : N</td><td><span class="pill p-casc">CASCADE</span></td><td>remove a device, its apps go too</td></tr>
+      <tr><td>application → vulnerability</td><td>1 : N</td><td><span class="pill p-casc">CASCADE</span></td><td>no orphan flaws</td></tr>
+      <tr><td>application ↔ permission</td><td>M : N</td><td><span class="pill p-casc">CASCADE</span></td><td>bridge rows clean up automatically</td></tr>
+      <tr><td>vulnerability → incident</td><td>1 : N</td><td><span class="pill p-casc">CASCADE</span></td><td>flaw gone → its cases gone</td></tr>
+      <tr><td>incident → incident_history</td><td>1 : N</td><td><span class="pill p-casc">CASCADE</span></td><td>audit rows follow their incident</td></tr>
+      <tr><td>analyst → incident</td><td>1 : N (optional)</td><td><span class="pill p-null">SET NULL</span></td><td>analyst leaves, incident &amp; history survive</td></tr>
+    </table>
+  </div>
+
+  <!-- CONSTRAINTS -->
+  <h2><span class="n">5</span>Integrity constraints (enforced in the data layer)</h2>
+  <div class="grid">
+    <div class="mini"><div class="k">Entity integrity</div><h4>PRIMARY KEY</h4><p>Surrogate ids on every table; one composite PK on the bridge.</p></div>
+    <div class="mini"><div class="k">Referential integrity</div><h4>FOREIGN KEY</h4><p>6 relationships with CASCADE / SET NULL, all ON UPDATE CASCADE.</p></div>
+    <div class="mini"><div class="k">Domain integrity</div><h4>CHECK · NOT NULL · DEFAULT</h4><p><code>severity ∈ {Low,Medium,High,Critical}</code>, <code>status</code>, <code>priority</code>, OS type; status defaults to <code>Open</code>. Cross-column check: <code>resolved_at ≥ created_at</code>.</p></div>
+    <div class="mini"><div class="k">Uniqueness</div><h4>UNIQUE</h4><p><code>permission.name</code> and <code>analyst.email</code> can't be duplicated.</p></div>
+  </div>
+
+  <!-- TRIGGERS -->
+  <h2><span class="n">6</span>Trigger automation (the self-maintaining audit trail)</h2>
+  <div class="card"><div class="flow">
+    <div class="step"><div class="dot">1</div><div class="d"><b>INSERT incident</b> → <code>trg_incident_after_insert</code> writes a <b>CREATED</b> row to incident_history.</div></div>
+    <div class="step"><div class="dot">2</div><div class="d"><b>UPDATE incident</b> (status→Resolved/Closed) → <code>trg_incident_before_update</code> stamps <code>resolved_at = NOW()</code> before the row is saved.</div></div>
+    <div class="step"><div class="dot">3</div><div class="d"><b>UPDATE incident</b> (status changed) → <code>trg_incident_after_update</code> logs a <b>STATUS_CHANGE</b> row (old → new, who, when).</div></div>
+  </div></div>
+
+  <!-- NORMALIZATION -->
+  <h2><span class="n">7</span>Normalization to 3NF</h2>
+  <div class="nf">
+    <div class="n"><div class="b">1NF</div>Atomic values — an app's permissions are individual bridge rows, never a comma-list.</div>
+    <div class="n"><div class="b">2NF</div>The only composite key (bridge) has no non-key attributes → no partial dependencies.</div>
+    <div class="n"><div class="b">3NF</div>No transitive dependencies — risk_level lives with permission, analyst details with analyst, audit data in its own table.</div>
+  </div>
+
+  <div class="foot">M-SHIELD · academic DBMS project · all security data is simulated · open alongside <code>sql/01_schema.sql</code></div>
+</div>
+</body>
+</html>

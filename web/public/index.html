@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>M-SHIELD Console</title>
+<style>
+  :root{
+    --bg:#0a0d14; --bg2:#0e131d; --panel:#121926; --panel2:#161f2e;
+    --line:#223049; --line2:#2d3f5c;
+    --txt:#e8edf6; --muted:#8a99b4; --faint:#5e6f8c;
+    --accent:#5b8cff; --accent2:#7c5cff; --glow:rgba(91,140,255,.35);
+    --crit:#ff4d6a; --high:#ff8a3d; --med:#ffcf3d; --low:#39d98a;
+    --open:#ff8a3d; --inv:#4da3ff; --res:#39d98a; --clo:#8a94a6;
+    --radius:14px; --shadow:0 10px 30px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:
+      radial-gradient(1200px 600px at 85% -10%, rgba(124,92,255,.10), transparent 60%),
+      radial-gradient(900px 500px at -10% 10%, rgba(91,140,255,.10), transparent 55%),
+      var(--bg);
+    color:var(--txt); font-family:"Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+    font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  .app{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+  .side{background:linear-gradient(180deg,var(--bg2),var(--bg));border-right:1px solid var(--line);
+    padding:22px 16px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column}
+  .brand{display:flex;align-items:center;gap:11px;padding:4px 8px 22px}
+  .logo{width:38px;height:38px;border-radius:11px;flex:none;background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:grid;place-items:center;box-shadow:0 6px 18px var(--glow)}
+  .logo svg{width:22px;height:22px}
+  .brand h1{font-size:16px;margin:0;letter-spacing:.5px;font-weight:700}
+  .brand span{font-size:11px;color:var(--faint);letter-spacing:2px;text-transform:uppercase}
+  .nav{display:flex;flex-direction:column;gap:3px;margin-top:4px}
+  .nav button{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:none;border:0;
+    color:var(--muted);font-size:13.5px;font-weight:500;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s;font-family:inherit}
+  .nav button svg{width:17px;height:17px;opacity:.85}
+  .nav button:hover{background:var(--panel);color:var(--txt)}
+  .nav button.active{background:linear-gradient(135deg,rgba(91,140,255,.18),rgba(124,92,255,.14));color:#fff;box-shadow:inset 0 0 0 1px var(--line2)}
+  .side-foot{margin-top:auto;padding:12px 10px 2px;border-top:1px solid var(--line);font-size:11px;color:var(--faint)}
+  .pulse{display:inline-flex;align-items:center;gap:7px;color:var(--res);font-weight:600;margin-bottom:6px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--res);animation:p 2s infinite}
+  @keyframes p{0%{box-shadow:0 0 0 0 rgba(57,217,138,.5)}70%{box-shadow:0 0 0 7px rgba(57,217,138,0)}100%{box-shadow:0 0 0 0 rgba(57,217,138,0)}}
+
+  .main{padding:30px 34px 60px;max-width:1240px}
+  .head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:22px;gap:16px;flex-wrap:wrap}
+  .head h2{margin:0;font-size:24px;font-weight:700}
+  .head p{margin:4px 0 0;color:var(--muted);font-size:13px}
+  .head-actions{display:flex;gap:10px}
+  .refresh,.btn{font-family:inherit;cursor:pointer;transition:.15s}
+  .refresh{background:var(--panel);border:1px solid var(--line2);color:var(--muted);padding:9px 15px;border-radius:10px;font-size:13px;display:flex;gap:8px;align-items:center}
+  .refresh:hover{color:#fff;border-color:var(--accent)}
+  .btn{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:0;padding:9px 16px;border-radius:10px;font-weight:650;font-size:13px;display:inline-flex;gap:7px;align-items:center}
+  .btn:hover{filter:brightness(1.1);box-shadow:0 6px 16px var(--glow)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn.ghost{background:var(--panel);border:1px solid var(--line2);color:var(--muted)}
+  .btn.ghost:hover{color:#fff;box-shadow:none;border-color:var(--accent)}
+
+  .view{display:none;animation:fade .35s ease}
+  .view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:22px}
+  .kpi{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:var(--radius);padding:18px;position:relative;overflow:hidden}
+  .kpi::after{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));opacity:.8}
+  .kpi .v{font-size:32px;font-weight:750;letter-spacing:-.5px}
+  .kpi .l{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-top:3px}
+  .kpi.alert .v{color:var(--crit)} .kpi.warn .v{color:var(--high)}
+  .grid2{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-bottom:16px}
+  @media(max-width:900px){.grid2{grid-template-columns:1fr}.app{grid-template-columns:1fr}.side{position:static;height:auto}}
+  .card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+  .card h3{margin:0 0 16px;font-size:14px;font-weight:650} .card h3 small{color:var(--faint);font-weight:400;margin-left:8px}
+  .bar{display:flex;align-items:center;gap:12px;margin-bottom:11px}
+  .bar .name{width:92px;flex:none;text-align:right}
+  .bar .track{flex:1;height:22px;background:var(--bg);border-radius:7px;overflow:hidden;border:1px solid var(--line)}
+  .bar .fill{height:100%;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-size:11px;font-weight:700;color:#06101f;min-width:26px;transition:width .6s cubic-bezier(.2,.8,.2,1)}
+  .donutwrap{display:flex;align-items:center;gap:22px}
+  .legend{display:flex;flex-direction:column;gap:9px;font-size:12.5px}
+  .legend div{display:flex;align-items:center;gap:9px;color:var(--muted)} .legend b{color:var(--txt);margin-left:auto}
+  .swatch{width:11px;height:11px;border-radius:3px;flex:none}
+  .stacked{height:26px;display:flex;border-radius:7px;overflow:hidden;border:1px solid var(--line);background:var(--bg)}
+  .stacked span{display:grid;place-items:center;font-size:11px;font-weight:700;color:#06101f}
+  .wl{margin-bottom:15px} .wl .top{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:6px} .wl .top .role{color:var(--faint)}
+
+  .tablewrap{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;padding:13px 16px;color:var(--faint);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--line);background:var(--bg2)}
+  td{padding:11px 16px;border-bottom:1px solid var(--line);vertical-align:middle}
+  tr:last-child td{border-bottom:0}
+  tbody tr{transition:.12s} tbody tr:hover{background:rgba(91,140,255,.05)}
+  .mono{font-variant-numeric:tabular-nums;color:var(--muted)} .strong{font-weight:600;color:#fff} .sub{color:var(--faint);font-size:12px}
+  .right{text-align:right}
+
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:650;white-space:nowrap}
+  .pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+  .sev-Critical{color:var(--crit);background:rgba(255,77,106,.13)} .sev-High{color:var(--high);background:rgba(255,138,61,.13)}
+  .sev-Medium{color:var(--med);background:rgba(255,207,61,.13)} .sev-Low{color:var(--low);background:rgba(57,217,138,.13)}
+  .st-Open{color:var(--open);background:rgba(255,138,61,.13)} .st-Investigating{color:var(--inv);background:rgba(77,163,255,.13)}
+  .st-Resolved{color:var(--res);background:rgba(57,217,138,.13)} .st-Closed{color:var(--clo);background:rgba(138,148,166,.15)}
+  .dv-Active{color:var(--low);background:rgba(57,217,138,.12)} .dv-Quarantined{color:var(--high);background:rgba(255,138,61,.13)} .dv-Retired{color:var(--clo);background:rgba(138,148,166,.15)}
+  .rk-High{color:var(--crit);background:rgba(255,77,106,.13)} .rk-Medium{color:var(--high);background:rgba(255,138,61,.13)} .rk-Low{color:var(--low);background:rgba(57,217,138,.13)}
+  .perm{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;background:rgba(255,77,106,.12);color:#ff8fa3;margin:2px 4px 2px 0}
+  .tag-os{font-size:11px;color:var(--faint);border:1px solid var(--line2);padding:1px 7px;border-radius:6px;margin-left:7px}
+  .chip{font-size:11px;color:var(--muted);background:var(--bg);border:1px solid var(--line);padding:2px 8px;border-radius:6px}
+
+  .ibtn{background:var(--panel);border:1px solid var(--line2);color:var(--muted);border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:inherit;transition:.15s}
+  .ibtn:hover{color:#fff;border-color:var(--accent)}
+  .ibtn.danger:hover{color:var(--crit);border-color:var(--crit)}
+  .acts{display:flex;gap:6px;justify-content:flex-end}
+
+  /* drawer */
+  .scrim{position:fixed;inset:0;background:rgba(4,7,12,.6);backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:.2s;z-index:40}
+  .scrim.show{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;right:0;height:100vh;width:min(480px,92vw);z-index:50;background:linear-gradient(180deg,var(--bg2),var(--bg));border-left:1px solid var(--line2);box-shadow:-20px 0 50px rgba(0,0,0,.5);transform:translateX(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column}
+  .drawer.show{transform:none}
+  .drawer .dh{padding:22px 24px;border-bottom:1px solid var(--line)}
+  .drawer .dh .x{float:right;background:none;border:0;color:var(--muted);font-size:22px;cursor:pointer;line-height:1}
+  .drawer .dh h3{margin:0 0 8px;font-size:17px;max-width:90%}
+  .drawer .body{padding:22px 24px;overflow:auto;flex:1}
+  .meta{display:grid;grid-template-columns:1fr 1fr;gap:14px 10px;margin-bottom:22px}
+  .meta .k{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:1px} .meta .vv{font-size:13.5px;margin-top:2px}
+  .ctl{background:var(--panel);border:1px solid var(--line2);border-radius:12px;padding:16px;margin-bottom:22px}
+  .ctl label{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:9px}
+  .ctl .row{display:flex;gap:10px}
+  .hint{font-size:11.5px;color:var(--faint);margin-top:10px;line-height:1.45} .hint code{color:var(--accent);background:var(--bg);padding:1px 5px;border-radius:4px}
+  .timeline{position:relative;padding-left:22px} .timeline::before{content:"";position:absolute;left:5px;top:4px;bottom:4px;width:2px;background:var(--line2)}
+  .ti{position:relative;padding:0 0 18px} .ti::before{content:"";position:absolute;left:-21px;top:3px;width:12px;height:12px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--bg)}
+  .ti.created::before{background:var(--clo)} .ti .act{font-weight:650;font-size:13px} .ti .chg{font-size:12.5px;color:var(--muted);margin:3px 0} .ti .when{font-size:11px;color:var(--faint)}
+  .ti.flash::before{animation:flash 1.4s ease} @keyframes flash{0%{box-shadow:0 0 0 4px var(--bg),0 0 0 10px rgba(57,217,138,.6)}100%{box-shadow:0 0 0 4px var(--bg)}}
+  .permrow{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line)}
+  .permrow .nm{font-weight:600} .toggle{border:1px solid var(--line2);background:var(--bg);color:var(--muted);border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:inherit}
+  .toggle.on{background:rgba(57,217,138,.15);border-color:var(--res);color:var(--res)}
+
+  /* modal form */
+  .modal{position:fixed;inset:0;z-index:70;display:none;place-items:center;padding:20px}
+  .modal.show{display:grid}
+  .modal .box{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line2);border-radius:16px;width:min(480px,94vw);max-height:90vh;overflow:auto;box-shadow:var(--shadow);animation:pop .22s ease}
+  @keyframes pop{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:none}}
+  .modal .mh{padding:20px 24px;border-bottom:1px solid var(--line);font-size:16px;font-weight:700}
+  .modal .mb{padding:22px 24px}
+  .modal .mf{padding:16px 24px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px}
+  .field{margin-bottom:15px} .field:last-child{margin-bottom:0}
+  .field label{display:block;font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px}
+  .field .req{color:var(--crit)}
+  input,select,textarea{width:100%;background:var(--bg);color:var(--txt);border:1px solid var(--line2);border-radius:9px;padding:10px 12px;font-family:inherit;font-size:13.5px}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--glow)}
+  textarea{resize:vertical;min-height:70px} select{cursor:pointer}
+  .ferr{color:var(--crit);font-size:12.5px;margin-top:4px;min-height:1px}
+
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(140%);background:var(--panel2);border:1px solid var(--res);color:var(--txt);padding:14px 20px;border-radius:12px;box-shadow:var(--shadow);z-index:90;transition:transform .3s cubic-bezier(.2,.8,.2,1);max-width:90vw;font-size:13px}
+  .toast.show{transform:translateX(-50%) translateY(0)} .toast.err{border-color:var(--crit)} .toast b{color:var(--res)} .toast.err b{color:var(--crit)}
+  .loading{color:var(--faint);padding:40px;text-align:center} .clickable{cursor:pointer}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <div><h1>M-SHIELD</h1><span>Security Console</span></div>
+    </div>
+    <nav class="nav" id="nav">
+      <button data-v="overview" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Overview</button>
+      <button data-v="devices"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>Devices</button>
+      <button data-v="apps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>Applications</button>
+      <button data-v="permissions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Permissions</button>
+      <button data-v="vulns"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 3.3a2 2 0 0 1 3.4 0l8 14A2 2 0 0 1 20 20H4a2 2 0 0 1-1.7-2.7z"/><path d="M12 9v4M12 17h.01"/></svg>Vulnerabilities</button>
+      <button data-v="incidents"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/></svg>Incidents</button>
+      <button data-v="analysts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Analysts</button>
+    </nav>
+    <div class="side-foot"><div class="pulse"><span class="dot"></span>LIVE · MySQL 8</div>
+      schema <span style="color:var(--muted)">mshield</span><br>full read / write · triggers active</div>
+  </aside>
+
+  <main class="main">
+    <div class="head">
+      <div id="head-text"><h2>Security Overview</h2><p>Live posture across the managed mobile fleet</p></div>
+      <div class="head-actions" id="head-actions">
+        <button class="refresh" id="refresh"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg>Refresh</button>
+      </div>
+    </div>
+    <section id="view-overview" class="view active"></section>
+    <section id="view-devices" class="view"></section>
+    <section id="view-apps" class="view"></section>
+    <section id="view-permissions" class="view"></section>
+    <section id="view-vulns" class="view"></section>
+    <section id="view-incidents" class="view"></section>
+    <section id="view-analysts" class="view"></section>
+  </main>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer"></aside>
+<div class="modal" id="modal"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SEVC={Critical:'var(--crit)',High:'var(--high)',Medium:'var(--med)',Low:'var(--low)'};
+const STC={Open:'var(--open)',Investigating:'var(--inv)',Resolved:'var(--res)',Closed:'var(--clo)'};
+const STATUSES=['Open','Investigating','Resolved','Closed'];
+const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const $=s=>document.querySelector(s);
+const sevPill=s=>`<span class="pill sev-${esc(s)}">${esc(s)}</span>`;
+const stPill=s=>`<span class="pill st-${esc(s)}">${esc(s)}</span>`;
+const today=()=>new Date().toISOString().slice(0,10);
+
+async function api(u,opt){const r=await fetch(u,opt);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||('HTTP '+r.status));return d;}
+let LISTS=null; async function lists(force){if(!LISTS||force)LISTS=await api('/api/lists');return LISTS;}
+
+// ---------- navigation ----------
+const HEADS={
+  overview:['Security Overview','Live posture across the managed mobile fleet'],
+  devices:['Devices','Managed endpoints — add, edit, or remove (delete cascades to apps)'],
+  apps:['Applications','Installed apps & their permissions — click Permissions to manage'],
+  permissions:['Permissions','Master permission list with risk weighting'],
+  vulns:['Vulnerabilities','Discovered flaws ranked by severity'],
+  incidents:['Incidents','Cases — add one (fires CREATED trigger) or open one to change status'],
+  analysts:['Analysts','Security staff — UNIQUE email enforced by the database'],
+};
+const ADD={devices:['+ Add device',deviceForm],apps:['+ Add app',appForm],permissions:['+ Add permission',permissionForm],
+  vulns:['+ Add vulnerability',vulnForm],incidents:['+ Add incident',incidentForm],analysts:['+ Add analyst',analystForm]};
+let current='overview';
+$('#nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+  show(b.dataset.v);});
+function show(v){current=v;
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));$('#view-'+v).classList.add('active');
+  $('#head-text').innerHTML=`<h2>${HEADS[v][0]}</h2><p>${HEADS[v][1]}</p>`;
+  const ha=$('#head-actions');ha.querySelectorAll('.btn').forEach(x=>x.remove());
+  if(ADD[v]){const btn=document.createElement('button');btn.className='btn';btn.textContent=ADD[v][0];btn.onclick=()=>ADD[v][1]();ha.prepend(btn);}
+  load(v);}
+$('#refresh').addEventListener('click',()=>load(current));
+function load(v){({overview:renderOverview,devices:renderDevices,apps:renderApps,permissions:renderPermissions,vulns:renderVulns,incidents:renderIncidents,analysts:renderAnalysts}[v])();}
+function spin(id){$('#view-'+id).innerHTML='<div class="loading">Loading…</div>';}
+
+// ---------- OVERVIEW ----------
+async function renderOverview(){const el=$('#view-overview');spin('overview');try{
+  const d=await api('/api/overview');const c=d.counts[0];
+  const kpi=(v,l,cls='')=>`<div class="kpi ${cls}"><div class="v">${v}</div><div class="l">${l}</div></div>`;
+  const maxS=Math.max(...d.severity.map(r=>+r.n),1);
+  const sevBars=d.severity.map(r=>`<div class="bar"><div class="name">${sevPill(r.severity)}</div><div class="track"><div class="fill" style="width:${Math.max(8,+r.n/maxS*100)}%;background:${SEVC[r.severity]}">${r.n}</div></div></div>`).join('');
+  const tot=d.statuses.reduce((a,r)=>a+ +r.n,0)||1;let off=0;const R=52,C=2*Math.PI*R;
+  const segs=d.statuses.map(r=>{const f=+r.n/tot;const s=`<circle r="${R}" cx="70" cy="70" fill="none" stroke="${STC[r.status]}" stroke-width="18" stroke-dasharray="${f*C} ${C}" stroke-dashoffset="${-off*C}" transform="rotate(-90 70 70)"/>`;off+=f;return s;}).join('');
+  const legend=d.statuses.map(r=>`<div><span class="swatch" style="background:${STC[r.status]}"></span>${r.status}<b>${r.n}</b></div>`).join('');
+  const wl=d.workload.map(r=>{const t=+r.total_incidents||0,o=+r.open_incidents||0,cl=+r.closed_incidents||0,m=Math.max(t,1);
+    return `<div class="wl"><div class="top"><span class="strong">${esc(r.name)} <span class="role">· ${esc(r.role)}</span></span><span class="mono">${t} total</span></div><div class="stacked">${o?`<span style="width:${o/m*100}%;background:var(--open)">${o}</span>`:''}${cl?`<span style="width:${cl/m*100}%;background:var(--res)">${cl}</span>`:''}${t===0?'<span style="width:100%;background:var(--line);color:var(--faint)">none</span>':''}</div></div>`;}).join('');
+  el.innerHTML=`<div class="kpis">${kpi(c.devices,'Devices')}${kpi(c.apps,'Applications')}${kpi(c.vulns,'Vulnerabilities')}${kpi(c.critical_vulns,'Critical','alert')}${kpi(c.open_incidents,'Open Incidents','warn')}${kpi(c.analysts,'Analysts')}</div>
+    <div class="grid2"><div class="card"><h3>Vulnerabilities by severity</h3>${sevBars}</div>
+    <div class="card"><h3>Incidents by status</h3><div class="donutwrap"><svg width="140" height="140" viewBox="0 0 140 140">${segs}<text x="70" y="66" text-anchor="middle" fill="#fff" font-size="26" font-weight="700">${c.incidents}</text><text x="70" y="86" text-anchor="middle" fill="var(--faint)" font-size="11">incidents</text></svg><div class="legend">${legend}</div></div></div></div>
+    <div class="card"><h3>Analyst workload <small>open vs. resolved/closed</small></h3>${wl}</div>`;
+}catch(e){el.innerHTML=errBox(e);}}
+
+// ---------- tables with actions ----------
+function tbl(id,cols,body){$('#view-'+id).innerHTML=`<div class="tablewrap"><table><thead><tr>${cols.map(c=>`<th${/^(#|Apps|Vulns|Perms|Used|Cases)/.test(c)||c===''?' class="right"':''}>${c}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`;}
+function actCell(buttons){return `<td><div class="acts">${buttons}</div></td>`;}
+const bEdit=`<button class="ibtn" data-act="edit">Edit</button>`;
+const bDel=`<button class="ibtn danger" data-act="del">Delete</button>`;
+function wire(id,handlers){$('#view-'+id).querySelectorAll('tr[data-id]').forEach(tr=>{
+  tr.querySelectorAll('[data-act]').forEach(btn=>btn.addEventListener('click',ev=>{ev.stopPropagation();handlers[btn.dataset.act]?.(tr.dataset.id,tr);}));
+  if(handlers.row)tr.addEventListener('click',()=>handlers.row(tr.dataset.id,tr));});}
+
+// ---------- DEVICES ----------
+async function renderDevices(){spin('devices');try{const rows=await api('/api/devices');
+  tbl('devices',['Device','OS','Owner','Apps','Status',''],rows.map(r=>`<tr data-id="${r.device_id}">
+    <td class="strong">${esc(r.name)}</td><td>${esc(r.os_type)}<span class="tag-os">${esc(r.os_version)}</span></td>
+    <td>${esc(r.owner_name)}</td><td class="mono right">${r.app_count}</td>
+    <td><span class="pill dv-${esc(r.status)}">${esc(r.status)}</span></td>${actCell(bEdit+bDel)}</tr>`).join(''));
+  wire('devices',{edit:id=>deviceForm(rows.find(r=>r.device_id===id)),
+    del:id=>confirmDel(`Delete device “${rows.find(r=>r.device_id===id).name}”? Its apps, vulnerabilities & incidents cascade-delete too.`,`/api/devices/${id}`,'devices')});
+}catch(e){$('#view-devices').innerHTML=errBox(e);}}
+async function deviceForm(d){const L=await lists();openForm({title:d?'Edit device':'Add device',
+  fields:[{n:'name',l:'Name',v:d?.name,req:1},{n:'os_type',l:'OS type',type:'select',opts:L.enums.OS_TYPES,v:d?.os_type,req:1},
+    {n:'os_version',l:'OS version',v:d?.os_version,req:1},{n:'owner_name',l:'Owner',v:d?.owner_name,req:1},
+    {n:'status',l:'Status',type:'select',opts:L.enums.DEV_STATUS,v:d?.status||'Active',req:1}],
+  url:d?`/api/devices/${d.device_id}`:'/api/devices',method:d?'PUT':'POST',reload:'devices'});}
+
+// ---------- APPLICATIONS ----------
+async function renderApps(){spin('apps');try{const rows=await api('/api/apps');
+  tbl('apps',['Application','Device','Perms','High-risk permissions','Vulns',''],rows.map(r=>`<tr data-id="${r.app_id}">
+    <td><span class="strong">${esc(r.app_name)}</span><div class="sub">${esc(r.publisher)} · v${esc(r.version)}</div></td>
+    <td>${esc(r.device_name)}</td><td class="mono right">${r.perm_count}</td>
+    <td>${r.high_risk?r.high_risk.split(', ').map(p=>`<span class="perm">${esc(p)}</span>`).join(''):'<span class="sub">— none —</span>'}</td>
+    <td class="mono right">${(+r.vuln_count)>0?`<span style="color:var(--high);font-weight:700">${r.vuln_count}</span>`:'0'}</td>
+    ${actCell(`<button class="ibtn" data-act="perms">Permissions</button>`+bDel)}</tr>`).join(''));
+  wire('apps',{perms:id=>permDrawer(id,rows.find(r=>r.app_id===id).app_name),
+    del:id=>confirmDel(`Delete app “${rows.find(r=>r.app_id===id).app_name}”? Its vulnerabilities & incidents cascade too.`,`/api/apps/${id}`,'apps')});
+}catch(e){$('#view-apps').innerHTML=errBox(e);}}
+async function appForm(){const L=await lists(true);openForm({title:'Add application',
+  fields:[{n:'device_id',l:'Device',type:'select',opts:L.devices.map(o=>[o.v,o.t]),req:1},
+    {n:'app_name',l:'App name',req:1},{n:'version',l:'Version',v:'1.0'},{n:'publisher',l:'Publisher',req:1},
+    {n:'install_date',l:'Install date',type:'date',v:today(),req:1}],
+  url:'/api/apps',method:'POST',reload:'apps'});}
+
+// ---------- PERMISSIONS ----------
+async function renderPermissions(){spin('permissions');try{const rows=await api('/api/permissions');
+  tbl('permissions',['Permission','Risk level','Used by apps',''],rows.map(r=>`<tr data-id="${r.permission_id}">
+    <td class="strong">${esc(r.name)}</td><td><span class="pill rk-${esc(r.risk_level)}">${esc(r.risk_level)}</span></td>
+    <td class="mono right">${r.used_by}</td>${actCell(bDel)}</tr>`).join(''));
+  wire('permissions',{del:id=>confirmDel(`Delete permission “${rows.find(r=>r.permission_id===id).name}”? It will be removed from any apps using it.`,`/api/permissions/${id}`,'permissions')});
+}catch(e){$('#view-permissions').innerHTML=errBox(e);}}
+function permissionForm(){const L=LISTS;openForm({title:'Add permission',
+  fields:[{n:'name',l:'Permission name',v:'',req:1},{n:'risk_level',l:'Risk level',type:'select',opts:['Low','Medium','High'],v:'Medium',req:1}],
+  url:'/api/permissions',method:'POST',reload:'permissions',after:()=>lists(true)});}
+
+// ---------- VULNERABILITIES ----------
+async function renderVulns(){spin('vulns');try{const rows=await api('/api/vulnerabilities');
+  tbl('vulns',['Severity','Vulnerability','Affected app','CVE','Found','Cases',''],rows.map(r=>`<tr data-id="${r.vuln_id}">
+    <td>${sevPill(r.severity)}</td><td class="strong">${esc(r.title)}</td>
+    <td>${esc(r.app_name)}<div class="sub">${esc(r.device_name)}</div></td>
+    <td>${r.cve_ref?`<span class="chip">${esc(r.cve_ref)}</span>`:'<span class="sub">—</span>'}</td>
+    <td class="mono">${esc(r.discovered_date)}</td><td class="mono right">${r.incident_count}</td>${actCell(bDel)}</tr>`).join(''));
+  wire('vulns',{del:id=>confirmDel(`Delete vulnerability “${rows.find(r=>r.vuln_id===id).title}”? Linked incidents cascade too.`,`/api/vulnerabilities/${id}`,'vulns')});
+}catch(e){$('#view-vulns').innerHTML=errBox(e);}}
+async function vulnForm(){const L=await lists(true);openForm({title:'Add vulnerability',
+  fields:[{n:'app_id',l:'Affected app',type:'select',opts:L.apps.map(o=>[o.v,o.t]),req:1},
+    {n:'title',l:'Title',req:1},{n:'description',l:'Description',type:'textarea'},
+    {n:'severity',l:'Severity',type:'select',opts:L.enums.SEVERITIES,v:'High',req:1},
+    {n:'cve_ref',l:'CVE reference (optional)'},{n:'discovered_date',l:'Discovered date',type:'date',v:today(),req:1}],
+  url:'/api/vulnerabilities',method:'POST',reload:'vulns'});}
+
+// ---------- INCIDENTS ----------
+let incidentsCache=[];
+async function renderIncidents(){spin('incidents');try{const rows=await api('/api/incidents');incidentsCache=rows;
+  tbl('incidents',['#','Incident','Severity','Status','Priority','Analyst',''],rows.map(r=>`<tr data-id="${r.incident_id}" class="clickable">
+    <td class="mono right">${r.incident_id}</td><td><span class="strong">${esc(r.title)}</span><div class="sub">${esc(r.app_name)} · ${esc(r.device_name)}</div></td>
+    <td>${sevPill(r.severity)}</td><td>${stPill(r.status)}</td><td class="mono">${esc(r.priority)}</td><td>${esc(r.analyst)}</td>
+    ${actCell(bDel)}</tr>`).join(''));
+  wire('incidents',{row:id=>openIncident(+id),
+    del:id=>confirmDel(`Delete incident #${id}? Its history rows cascade too.`,`/api/incidents/${id}`,'incidents')});
+}catch(e){$('#view-incidents').innerHTML=errBox(e);}}
+async function incidentForm(){const L=await lists(true);openForm({title:'Add incident',
+  fields:[{n:'vuln_id',l:'Vulnerability',type:'select',opts:L.vulns.map(o=>[o.v,o.t]),req:1},
+    {n:'assigned_analyst_id',l:'Assign analyst (optional)',type:'select',opts:[['','— unassigned —'],...L.analysts.map(o=>[o.v,o.t])]},
+    {n:'title',l:'Title',req:1},{n:'priority',l:'Priority',type:'select',opts:L.enums.PRIORITIES,v:'Medium',req:1},
+    {n:'status',l:'Initial status',type:'select',opts:L.enums.STATUSES,v:'Open',req:1}],
+  url:'/api/incidents',method:'POST',reload:'incidents',toast:'Incident created — CREATED row auto-logged by trigger'});}
+
+// ---------- ANALYSTS ----------
+async function renderAnalysts(){spin('analysts');try{const rows=await api('/api/analysts');
+  tbl('analysts',['Name','Email','Role','Cases',''],rows.map(r=>`<tr data-id="${r.analyst_id}">
+    <td class="strong">${esc(r.name)}</td><td class="mono">${esc(r.email)}</td><td>${esc(r.role)}</td>
+    <td class="mono right">${r.incidents}</td>${actCell(bEdit+bDel)}</tr>`).join(''));
+  wire('analysts',{edit:id=>analystForm(rows.find(r=>r.analyst_id===id)),
+    del:id=>confirmDel(`Delete analyst “${rows.find(r=>r.analyst_id===id).name}”? Their incidents stay but become unassigned (ON DELETE SET NULL).`,`/api/analysts/${id}`,'analysts')});
+}catch(e){$('#view-analysts').innerHTML=errBox(e);}}
+function analystForm(a){openForm({title:a?'Edit analyst':'Add analyst',
+  fields:[{n:'name',l:'Name',v:a?.name,req:1},{n:'email',l:'Email (must be unique)',v:a?.email,req:1},{n:'role',l:'Role',v:a?.role||'Security Analyst',req:1}],
+  url:a?`/api/analysts/${a.analyst_id}`:'/api/analysts',method:a?'PUT':'POST',reload:'analysts',after:()=>lists(true)});}
+
+// ---------- incident drawer (status + audit trail) ----------
+function openIncident(id,flash){const inc=incidentsCache.find(x=>+x.incident_id===id);const dr=$('#drawer');
+  dr.innerHTML=`<div class="dh"><button class="x" onclick="closeDrawer()">×</button><h3>${esc(inc.title)}</h3><div>${sevPill(inc.severity)} &nbsp; ${stPill(inc.status)}</div></div>
+    <div class="body"><div class="meta">
+      <div><div class="k">Incident</div><div class="vv mono">#${inc.incident_id}</div></div><div><div class="k">Priority</div><div class="vv">${esc(inc.priority)}</div></div>
+      <div><div class="k">Vulnerability</div><div class="vv">${esc(inc.vuln_title)}</div></div><div><div class="k">CVE</div><div class="vv">${inc.cve_ref?esc(inc.cve_ref):'—'}</div></div>
+      <div><div class="k">Application</div><div class="vv">${esc(inc.app_name)}</div></div><div><div class="k">Device</div><div class="vv">${esc(inc.device_name)} <span class="sub">(${esc(inc.os_type)})</span></div></div>
+      <div><div class="k">Analyst</div><div class="vv">${esc(inc.analyst)}</div></div><div><div class="k">Created</div><div class="vv mono">${esc(inc.created_at)}</div></div></div>
+      <div class="ctl"><label>Change status — fires the database trigger</label><div class="row">
+        <select id="statusSel">${STATUSES.map(s=>`<option ${s===inc.status?'selected':''}>${s}</option>`).join('')}</select>
+        <button class="btn" id="applyBtn">Apply</button></div>
+        <div class="hint">An <code>UPDATE</code> runs on <code>incident</code>. The <b>AFTER UPDATE</b> trigger writes to <code>incident_history</code>; a <b>BEFORE UPDATE</b> trigger stamps <code>resolved_at</code>.</div></div>
+      <h3 style="font-size:13px;margin:0 0 16px;color:var(--faint);text-transform:uppercase;letter-spacing:1px">Audit trail · incident_history</h3>
+      <div id="timeline"><div class="loading">Loading…</div></div></div>`;
+  openDrawer();$('#applyBtn').onclick=()=>applyStatus(id);loadTimeline(id,flash);}
+async function loadTimeline(id,flash){try{const h=await api(`/api/incident/${id}/history`);
+  $('#timeline').innerHTML=h.length?h.map((r,i)=>{const cr=r.action==='CREATED',last=i===h.length-1;
+    return `<div class="ti ${cr?'created':''} ${flash&&last?'flash':''}"><div class="act">${cr?'Incident created':'Status changed'}</div>
+      <div class="chg">${cr?('→ '+stPill(r.new_status)):(stPill(r.old_status)+' &nbsp;→&nbsp; '+stPill(r.new_status))}</div>
+      <div class="when">${esc(r.changed_at)} · ${esc(r.changed_by)}</div></div>`;}).join(''):'<div class="sub">No history yet.</div>';
+}catch(e){$('#timeline').innerHTML=errBox(e);}}
+async function applyStatus(id){const btn=$('#applyBtn'),status=$('#statusSel').value;btn.disabled=true;btn.textContent='Applying…';
+  try{const res=await api(`/api/incident/${id}/status`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});
+    const i=incidentsCache.findIndex(x=>+x.incident_id===id);if(i>=0)incidentsCache[i]=res.incident;
+    toast(`Trigger fired — <b>incident_history</b> now has ${res.history.length} rows`);openIncident(id,true);renderIncidents();
+  }catch(e){toast('⚠ '+e.message,1);btn.disabled=false;btn.textContent='Apply';}}
+
+// ---------- app-permission drawer ----------
+async function permDrawer(appId,appName){const dr=$('#drawer');
+  dr.innerHTML=`<div class="dh"><button class="x" onclick="closeDrawer()">×</button><h3>Permissions · ${esc(appName)}</h3>
+    <div class="sub">Toggle to grant or revoke — writes the app_permission bridge table</div></div>
+    <div class="body"><div style="text-align:right;margin-bottom:8px"><button class="btn ghost" id="newPerm">+ New permission</button></div><div id="permlist"><div class="loading">Loading…</div></div></div>`;
+  openDrawer();$('#newPerm').onclick=()=>permissionForm();loadPerms(appId);}
+async function loadPerms(appId){try{const ps=await api(`/api/apps/${appId}/permissions`);
+  $('#permlist').innerHTML=ps.map(p=>`<div class="permrow"><div><span class="nm">${esc(p.name)}</span> <span class="pill rk-${esc(p.risk_level)}" style="margin-left:6px">${esc(p.risk_level)}</span></div>
+    <button class="toggle ${(+p.assigned)?'on':''}" data-pid="${p.permission_id}" data-on="${+p.assigned}">${(+p.assigned)?'Granted':'Grant'}</button></div>`).join('');
+  $('#permlist').querySelectorAll('.toggle').forEach(b=>b.onclick=()=>togglePerm(appId,b.dataset.pid,+b.dataset.on));
+}catch(e){$('#permlist').innerHTML=errBox(e);}}
+async function togglePerm(appId,pid,on){try{
+  if(on)await api(`/api/apps/${appId}/permissions/${pid}`,{method:'DELETE'});
+  else await api(`/api/apps/${appId}/permissions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({permission_id:pid})});
+  loadPerms(appId);if(current==='apps')renderApps();toast(on?'Permission revoked':'Permission granted');
+}catch(e){toast('⚠ '+e.message,1);}}
+
+// ---------- generic modal form ----------
+function openForm(cfg){const m=$('#modal');
+  const fields=cfg.fields.map(f=>{let input;
+    if(f.type==='select'){const opts=f.opts.map(o=>Array.isArray(o)?o:[o,o]);
+      input=`<select name="${f.n}">${opts.map(([v,t])=>`<option value="${esc(v)}" ${String(f.v)===String(v)?'selected':''}>${esc(t)}</option>`).join('')}</select>`;}
+    else if(f.type==='textarea')input=`<textarea name="${f.n}">${esc(f.v||'')}</textarea>`;
+    else input=`<input name="${f.n}" type="${f.type==='date'?'date':'text'}" value="${esc(f.v||'')}" ${f.type==='date'?'':'autocomplete=off'}>`;
+    return `<div class="field"><label>${esc(f.l)}${f.req?' <span class="req">*</span>':''}</label>${input}</div>`;}).join('');
+  m.innerHTML=`<div class="box"><div class="mh">${esc(cfg.title)}</div><div class="mb"><form id="theForm">${fields}<div class="ferr" id="ferr"></div></form></div>
+    <div class="mf"><button class="btn ghost" type="button" id="cancelBtn">Cancel</button><button class="btn" id="saveBtn">Save</button></div></div>`;
+  m.classList.add('show');$('#scrim').classList.add('show');
+  const close=()=>{m.classList.remove('show');if(!$('#drawer').classList.contains('show'))$('#scrim').classList.remove('show');};
+  $('#cancelBtn').onclick=close;setTimeout(()=>m.querySelector('input,select,textarea')?.focus(),60);
+  $('#saveBtn').onclick=async()=>{const fd=new FormData($('#theForm'));const body={};fd.forEach((v,k)=>body[k]=v);
+    const reqMissing=cfg.fields.find(f=>f.req&&!String(body[f.n]||'').trim());
+    if(reqMissing){$('#ferr').textContent=reqMissing.l+' is required';return;}
+    const btn=$('#saveBtn');btn.disabled=true;btn.textContent='Saving…';
+    try{await api(cfg.url,{method:cfg.method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      close();if(cfg.after)await cfg.after();load(cfg.reload);toast(cfg.toast||'Saved');
+    }catch(e){$('#ferr').textContent=e.message;btn.disabled=false;btn.textContent='Save';}};
+  $('#theForm').onsubmit=e=>{e.preventDefault();$('#saveBtn').click();};}
+
+// ---------- confirm delete ----------
+function confirmDel(msg,url,reload){const m=$('#modal');
+  m.innerHTML=`<div class="box"><div class="mh">Confirm delete</div><div class="mb"><p style="margin:0;color:var(--muted)">${esc(msg)}</p></div>
+    <div class="mf"><button class="btn ghost" id="cancelBtn">Cancel</button><button class="btn" id="delBtn" style="background:linear-gradient(135deg,var(--crit),#c0304a)">Delete</button></div></div>`;
+  m.classList.add('show');$('#scrim').classList.add('show');
+  const close=()=>{m.classList.remove('show');if(!$('#drawer').classList.contains('show'))$('#scrim').classList.remove('show');};
+  $('#cancelBtn').onclick=close;
+  $('#delBtn').onclick=async()=>{const b=$('#delBtn');b.disabled=true;b.textContent='Deleting…';
+    try{await api(url,{method:'DELETE'});close();await lists(true);load(reload);toast('Deleted');}
+    catch(e){close();toast('⚠ '+e.message,1);}};}
+
+// ---------- drawer / helpers ----------
+function openDrawer(){$('#scrim').classList.add('show');$('#drawer').classList.add('show');}
+function closeDrawer(){$('#drawer').classList.remove('show');if(!$('#modal').classList.contains('show'))$('#scrim').classList.remove('show');}
+$('#scrim').addEventListener('click',()=>{closeDrawer();const m=$('#modal');if(m.classList.contains('show')){m.classList.remove('show');$('#scrim').classList.remove('show');}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDrawer();$('#modal').classList.remove('show');if(!$('#drawer').classList.contains('show'))$('#scrim').classList.remove('show');}});
+function errBox(e){return `<div class="card" style="border-color:var(--crit)"><h3 style="color:var(--crit)">Error</h3><p class="sub">${esc(e.message)}</p></div>`;}
+let toastT;function toast(msg,err){const t=$('#toast');t.innerHTML=msg;t.className='toast show'+(err?' err':'');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),3600);}
+
+show('overview');
+</script>
+</body>
+</html>
